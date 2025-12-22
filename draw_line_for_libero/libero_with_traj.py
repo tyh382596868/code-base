@@ -6,7 +6,7 @@ from pathlib import Path
 import imageio
 import numpy as np
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
-from lerobot.datasets.utils import load_jsonlines
+from lerobot.datasets.utils import load_jsonlines,append_jsonlines
 from datasets import Dataset
 np.set_printoptions(precision=2)
 
@@ -100,8 +100,15 @@ def get_video(video_path):
 
 def save_as_lerobot_dataset(lerobot_dataset: LeRobotDataset, libero_parquet_dir: Path):
     # breakpoint()
+    index = 0
     task_index_to_name = load_jsonlines(str(libero_parquet_dir.parent.parent / "meta" / "tasks.jsonl"))
     for parquet_file in libero_parquet_dir.iterdir():
+        print(f"old:{parquet_file}")
+        print(f"new:{index}")
+        old_to_new_index_path = libero_parquet_dir.parent.parent /"meta"/ "old_to_new.jsonl"
+        print(old_to_new_index_path)
+        append_jsonlines({"new_index":index,"old_index":parquet_file.stem},old_to_new_index_path)
+        index += 1
 
         ### get image
         video1_path = libero_parquet_dir.parent.parent / "videos/chunk-000" / "observation.images.image" / f"{parquet_file.stem}.mp4"
