@@ -8,23 +8,24 @@ import shutil
 # 用户配置区域 (修改这里以适配不同项目)
 # ==========================================
 
-CONFIG = {
-    "project_name": "openvla-oft",  # 对应 conda create -n openvla-oft
-    "python_version": "3.10",
-    "use_uv": False,                # 该脚本使用标准 pip，未使用 uv
 
-    # # === [新增] 全局镜像源配置 ===
-    # # 只要配在这里，下面所有的 pip install 都不用再写 -i 参数了
-    # "global_env": {
-    #     "PIP_INDEX_URL": "https://pkg.pjlab.org.cn/repository/pypi-proxy/simple/",
-    #     "PIP_TRUSTED_HOST": "pkg.pjlab.org.cn"
-    # },
+
+
+CONFIG = {
+    "project_name": "groot",  
+    "python_version": "3.10",
+    "use_uv": True,                
 
     # === [关键修改] 全局环境变量配置 ===
     "global_env": {
         # 1. 配置 pip 镜像源
         "PIP_INDEX_URL": "https://pkg.pjlab.org.cn/repository/pypi-proxy/simple/",
         "PIP_TRUSTED_HOST": "pkg.pjlab.org.cn",
+
+        # === 2. 额外源 (Nvidia) ===
+        # 【关键】专门给 uv 看的。
+        # 只有当 PJLab 里找不到包(比如 tensorrt-libs)时，uv 才会去这里找
+        "UV_EXTRA_INDEX_URL": "https://pypi.nvidia.com",
 
         # 2. 【核心解决方案】配置不走代理的白名单
         # 告诉 pip 和其他工具：访问 pjlab.org.cn 时，不要经过代理
@@ -33,52 +34,24 @@ CONFIG = {
         "NO_PROXY": "localhost,127.0.0.1,pkg.pjlab.org.cn" 
     },
 
-    # 1. 基础依赖 (Torch 和 Ninja)
-    "pip_requirements": [
-        # 对应: pip3 install torch torchvision torchaudio
-        # 注意: 如果你需要特定的 CUDA 版本(如11.8)，可以在这里加上 --index-url 参数
-        "torch torchvision torchaudio", 
-        
-        # 对应: pip install packaging ninja
-        "packaging",
-        "ninja"
-    ],
+    "post_setup_cmds": [
+        # "uv remove flash-attn",
 
-    "complex_installs": [
-        # 2. 处理 Git Clone 和 项目安装
-        # 对应: git clone ...; cd openvla-oft; pip install -e .
-        {
-            "custom_cmd": [
-                # === [修改点] ===
-                # 意思是：如果 openvla-oft 目录不存在，才执行 clone；否则打印提示并跳过
-                # test -d 检查目录是否存在; || 表示"或者"(前面的失败了才执行后面的)
-                "test -d openvla-oft && echo '[INFO] Repo already exists, skipping clone.' || git clone https://github.com/moojink/openvla-oft.git",                
-                # "git clone https://github.com/moojink/openvla-oft.git",
-                
-                # 【技巧】不用在 Python 里执行 cd，直接指定目录路径安装即可
-                # 这样比 os.chdir 更安全，不容易弄乱脚本的执行路径
-                "pip install -e openvla-oft" 
-            ]
-        },
+        "uv sync --python 3.10",
+        ## 远程安装
+        # "uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl",
+        ## or 本地安装
+        # "uv pip install /mnt/petrelfs/tangyuhang/tyh2/whl/flash_attn-2.7.4.post1+cu12torch2.7cxx11abiFALSE-cp310-cp310-linux_x86_64.whl"
 
-        # 3. 安装 Flash Attention
-        # 对应: ninja --version; pip install "flash-attn==2.5.5" ...
-        {
-            "custom_cmd": [
-                # 先验证 ninja (如果这步报错，脚本会自动停止，起到了 verify 的作用)
-                "ninja --version", 
-                
-                # 建议先清理缓存(脚本注释中提到的)，防止安装旧的坏包
-                # "pip cache remove flash_attn", 
-                
-                # "pip install flash-attn==2.5.5 --no-build-isolation"
-                "pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.5/flash_attn-2.5.5+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl"
-            ]
-        }
+
+        "uv pip install -e .",
+        # 4. [新增] 打印环境信息进行自检
+        # 注意：外层用双引号，内层 f-string 用单引号，避免转义地狱
+        "uv run python -c \"import torch; import platform; print(f'Torch: {torch.__version__}'); print(f'CUDA: {torch.version.cuda}'); print(f'Python: {platform.python_version()}')\""     
     ],
     
-    # 4. Git 子模块 (原脚本没提，但如果有需要可以开启)
-    "init_submodules": False, 
+    # 4. Git 子模块
+    "init_submodules": True, 
 }
 
 # ==========================================
@@ -167,7 +140,7 @@ def main():
         print("\n=== Running UV Sync ===")
         # 示例：针对 openpi 的特殊环境变量
         uv_env = {"GIT_LFS_SKIP_SMUDGE": "1"} if "openpi" in CONFIG["project_name"] else {}
-        run_cmd("uv sync", env=uv_env)
+        # run_cmd("uv sync", env=uv_env)
 
     # 4. 安装基础依赖
     if CONFIG.get("pip_requirements"):
