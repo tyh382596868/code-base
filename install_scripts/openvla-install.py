@@ -9,7 +9,7 @@ import shutil
 # ==========================================
 
 CONFIG = {
-    "project_name": "openvla-oft",  # 对应 conda create -n openvla-oft
+    "project_name": "openvla",  # 对应 conda create -n openvla
     "python_version": "3.10",
     "use_uv": False,                # 该脚本使用标准 pip，未使用 uv
 
@@ -52,12 +52,12 @@ CONFIG = {
                 # === [修改点] ===
                 # 意思是：如果 openvla-oft 目录不存在，才执行 clone；否则打印提示并跳过
                 # test -d 检查目录是否存在; || 表示"或者"(前面的失败了才执行后面的)
-                "test -d openvla-oft && echo '[INFO] Repo already exists, skipping clone.' || git clone https://github.com/moojink/openvla-oft.git",                
+                "test -d openvla && echo '[INFO] Repo already exists, skipping clone.' || git clone https://github.com/openvla/openvla.git",                
                 # "git clone https://github.com/moojink/openvla-oft.git",
                 
                 # 【技巧】不用在 Python 里执行 cd，直接指定目录路径安装即可
                 # 这样比 os.chdir 更安全，不容易弄乱脚本的执行路径
-                "pip install -e openvla-oft" 
+                "pip install -e openvla" 
             ]
         },
 
@@ -72,7 +72,8 @@ CONFIG = {
                 # "pip cache remove flash_attn", 
                 
                 # "pip install flash-attn==2.5.5 --no-build-isolation"
-                "pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.5/flash_attn-2.5.5+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl"
+                # "pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.5/flash_attn-2.5.5+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl"
+                "pip install /mnt/hwfile/tangyuhang/tyh2/whl/flash_attn-2.5.5+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl"
             ]
         }
     ],
